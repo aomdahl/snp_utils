@@ -10,6 +10,7 @@ parser$add_argument("--percent", type = "numeric", help = "Specify the top quant
 parser$add_argument("--sd", type = "numeric", help = "Specify the number of standard deviations above mean to get", default = 0)
 parser$add_argument("--outdir", type  = "character", help = "Specify an output directory")
 parser$add_argument("--rownames", type  = "logical", help = "Specify if there are rownames on loadings file. Default is no, assumes SNPs ordered same as given in list.", default = F, action = "store_true")
+parser$add_argument("--tsv_OC", type  = "logical", help = "Specify this if you want to make output in the Open Cravat TSV form, basically the same thing.", default = F, action = "store_true")
 parser$add_argument('--help',type='logical',action='store_true',help='Print the help page')
 parser$add_argument('--test_run',type='logical',action='store_true',help='Do a test run of the program.', default = F)
 parser$helpme()
@@ -65,13 +66,28 @@ if(optional_data != "")
 
 if(optional_data != "")
 {
+  
   bed_out <- id_list %>% separate(ID, into = c("chr", "pos"), sep = ":", remove = F) %>%
     merge(., join_list, by = "RSID") %>% arrange(chr, pos) %>% mutate("beside" = as.numeric(pos) + 1) %>% mutate("chr" = paste0("chr", chr)) %>%
     select(chr, pos, beside, RSID, loadings)
+  if(args$tsv_OC){
+    #chr10	8097619	+	A	T	s3	var001
+    bed_out <- id_list %>% separate(ID, into = c("chr", "pos"), sep = ":", remove = F) %>%
+      merge(., join_list, by = "RSID") %>% arrange(chr, pos) %>% mutate("strand" = "-", "ref" = "-", "alt" = "-") %>% mutate("chr" = paste0("chr", chr)) %>%
+      select(chr, pos, strand, ref, alt, RSID, loadings)
+  }
+  
 } else{
   bed_out <- id_list %>% separate(ID, into = c("chr", "pos"), sep = ":", remove = F) %>% 
     arrange(chr, pos) %>% mutate("beside" = as.numeric(pos) + 1) %>% mutate("chr" = paste0("chr", chr)) %>%
     select(chr, pos, beside, RSID)
+  
+  if(args$tsv_OC){
+    #chr10	8097619	+	A	T	s3	var001
+    bed_out <- id_list %>% separate(ID, into = c("chr", "pos"), sep = ":", remove = F) %>%
+      merge(., join_list, by = "RSID") %>% arrange(chr, pos) %>% mutate("strand" = "-", "ref" = "-", "alt" = "-") %>% mutate("chr" = paste0("chr", chr), "loadings" = "sigtest") %>%
+      select(chr, pos, strand, ref, alt, RSID, loadings)
+  }
 }
 
 write_tsv(bed_out, args$outdir, col_names = FALSE)
